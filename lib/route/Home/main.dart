@@ -38,8 +38,7 @@ class _UpvoteButton extends StatelessWidget {
 
   _signInWithApple() async {
     // Create and configure an OAuthProvider for Sign In with Apple.
-    final provider =
-        OAuthProvider("apple.com");
+    final provider = OAuthProvider("apple.com");
 
     // Sign in the user with Firebase.
     return await FirebaseAuth.instance.signInWithRedirect(provider);
@@ -223,6 +222,7 @@ class _ListOfSongs extends StatelessWidget {
         });
   }
 }
+
 class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -233,10 +233,22 @@ class MyHomePage extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           }
           return Scaffold(
-            appBar: AppBar(title: Text('PjSekai Wishlist Songs'),),
+            appBar: AppBar(
+              title: Text('PjSekai Wishlist Songs'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: 'Show Snackbar',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Testing for next')));
+                  },
+                ),
+              ],
+            ),
             body: _ListOfSongs(
-            snapshot: snapshot.data?.docs,
-          ),
+              snapshot: snapshot.data?.docs,
+            ),
           );
         });
   }
