@@ -33,16 +33,13 @@ class _UpvoteButton extends StatelessWidget {
   _UpvoteButton({@required this.homeSongData, this.userLikesData});
   _signInWithGoogle() async {
     final googleProvider = GoogleAuthProvider();
-    googleProvider
-        .addScope('https://www.googleapis.com/auth/contacts.readonly');
-    googleProvider.setCustomParameters({'login_hint': 'user@example.com'});
     return await FirebaseAuth.instance.signInWithRedirect(googleProvider);
   }
 
   _signInWithApple() async {
     // Create and configure an OAuthProvider for Sign In with Apple.
     final provider =
-        OAuthProvider("apple.com").addScope('email').addScope('name');
+        OAuthProvider("apple.com");
 
     // Sign in the user with Firebase.
     return await FirebaseAuth.instance.signInWithRedirect(provider);
