@@ -1,121 +1,199 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:pjsekai_upvote/main.dart';
 
-class MyHomePage extends StatefulWidget {
-  @override
-  createState() {
-    return _MyHomePageState();
+class _UpvoteIcon extends StatelessWidget {
+  final homeSongData;
+  final userLikesData;
+  _UpvoteIcon({@required this.homeSongData, @required this.userLikesData});
+  _isUserLoggedIn() {
+    return FirebaseAuth.instance.currentUser != null;
   }
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  var _songsStream = FirebaseFirestore.instance.collection('songs').snapshots();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('PjSekai wishlist songs'),
-      ),
-      body: StreamBuilder(
-          stream: _songsStream,
-          builder: (context, AsyncSnapshot snapshot) {
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('error fetch data'),
-              );
-            }
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-            return Center(
-              child: Container(
-                  constraints: BoxConstraints(maxWidth: 500),
-                  child: listOfSongs(snapshot)),
-            );
-          }),
+    if (_isUserLoggedIn() &&
+        userLikesData.contains(FirebaseAuth.instance.currentUser?.uid)) {
+      return Icon(
+        Icons.favorite,
+        color: Colors.red,
+      );
+    }
+    return Icon(
+      Icons.favorite_outline,
+      color: Colors.red,
     );
   }
+}
 
-  thumbnailImage(var url) {
+class _UpvoteButton extends StatelessWidget {
+  final userLikesData;
+  final homeSongData;
+  _UpvoteButton({@required this.homeSongData, this.userLikesData});
+  _signInWithGoogle() async {
+    final googleProvider = GoogleAuthProvider();
+    googleProvider
+        .addScope('https://www.googleapis.com/auth/contacts.readonly');
+    googleProvider.setCustomParameters({'login_hint': 'user@example.com'});
+    return await FirebaseAuth.instance.signInWithRedirect(googleProvider);
+  }
+
+  _signInWithApple() async {
+    // Create and configure an OAuthProvider for Sign In with Apple.
+    final provider =
+        OAuthProvider("apple.com").addScope('email').addScope('name');
+
+    // Sign in the user with Firebase.
+    return await FirebaseAuth.instance.signInWithRedirect(provider);
+  }
+
+  _isUserLoggedIn() {
+    return FirebaseAuth.instance.currentUser != null;
+  }
+
+  _handleLikesClick(context) async {
+    var songId = homeSongData.id;
+    var batch = FirebaseFirestore.instance.batch();
+    if (userLikesData.contains(FirebaseAuth.instance.currentUser?.uid)) {
+      try {
+        FirebaseFirestore.instance.collection('songs').doc(songId).update({
+          'user_likes': userLikesData.where((x) {
+            return x != FirebaseAuth.instance.currentUser?.uid;
+          }).toList(),
+          'likes': homeSongData['likes'] - 1,
+        });
+        await batch.commit();
+      } catch (err) {}
+    } else {
+      userLikesData.add(FirebaseAuth.instance.currentUser?.uid);
+      var totalLikes = homeSongData['likes'];
+      totalLikes += 1;
+      try {
+        batch.update(
+            FirebaseFirestore.instance.collection('songs').doc(homeSongData.id),
+            {
+              'likes': totalLikes,
+              'user_likes': userLikesData,
+            });
+        await batch.commit();
+      } catch (err) {
+        print(err.toString());
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      height: 320,
-      color: Colors.grey,
-      child: Center(
-        child: Image(image: NetworkImage(url)),
-      ),
-    );
+        margin: EdgeInsets.only(top: 8, left: 8),
+        child: GestureDetector(
+          onTap: () {
+            if (_isUserLoggedIn()) {
+              // print('lewaat');
+              _handleLikesClick(context);
+            } else {
+              showModalBottomSheet(
+                  context: context,
+                  builder: (context) {
+                    return Container(
+                      height: 108,
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Container(
+                              width: double.infinity,
+                              height: 32,
+                              child: ElevatedButton(
+                                  onPressed: () {
+                                    _signInWithGoogle();
+                                  },
+                                  child: Text('Vote with google account'))),
+                          Container(
+                              width: double.infinity,
+                              height: 32,
+                              margin: EdgeInsets.only(top: 8),
+                              child: OutlinedButton(
+                                  onPressed: () {
+                                    _signInWithApple();
+                                  },
+                                  child: Text('Vote with apple account')))
+                        ],
+                      ),
+                    );
+                  });
+            }
+          },
+          child: _UpvoteIcon(
+            homeSongData: homeSongData,
+            userLikesData: userLikesData,
+          ),
+        ));
   }
+}
 
-  title(var title) {
+class _LikesCount extends StatelessWidget {
+  final data;
+  _LikesCount({@required this.data});
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(top: 8, left: 8),
-      child: Text(title,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      margin: EdgeInsets.only(left: 8, top: 8),
+      child: Text('$data likes'),
     );
   }
+}
 
-  creator(var creator) {
+class _Creator extends StatelessWidget {
+  final data;
+  _Creator({@required this.data});
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(top: 4, left: 8),
       child: Text(
-        creator,
+        data,
         style: TextStyle(fontSize: 12),
       ),
     );
   }
+}
 
-  upvoteButton() {
+class _Title extends StatelessWidget {
+  final data;
+  _Title({@required this.data});
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(top: 8, left: 8),
-      child: GestureDetector(
-        onTap: () {
-          showModalBottomSheet(
-              context: context,
-              builder: (context) {
-                return Container(
-                  height: 108,
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Container(
-                          width: double.infinity,
-                          height: 32,
-                          child: ElevatedButton(
-                              onPressed: () {},
-                              child: Text('Vote with google account'))),
-                      Container(
-                          width: double.infinity,
-                          height: 32,
-                          margin: EdgeInsets.only(top: 8),
-                          child: OutlinedButton(
-                              onPressed: () {},
-                              child: Text('Vote with apple account')))
-                    ],
-                  ),
-                );
-              });
-        },
-        child: Icon(
-          Icons.favorite_border,
-          color: Colors.red,
-        ),
+      child: Text(data,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+    );
+  }
+}
+
+class _ThumbnailImage extends StatelessWidget {
+  final data;
+  _ThumbnailImage({@required this.data});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 320,
+      color: Colors.grey,
+      child: Center(
+        child: Image(image: NetworkImage(data)),
       ),
     );
   }
+}
 
-  likesCount(var likesCount) {
-    return Container(
-      margin: EdgeInsets.only(left: 8, top: 8),
-      child: Text('$likesCount likes'),
-    );
-  }
-
-  listOfSongs(var snapshot) {
+class _ListOfSongs extends StatelessWidget {
+  final snapshot;
+  _ListOfSongs({@required this.snapshot});
+  @override
+  Widget build(BuildContext context) {
     return ListView.builder(
-        itemCount: snapshot.data.docs.length,
+        itemCount: snapshot.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: EdgeInsets.all(8),
@@ -125,14 +203,43 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  thumbnailImage(snapshot.data.docs[index]['thumbnail']),
-                  title(snapshot.data.docs[index]['title']),
-                  creator(snapshot.data.docs[index]['creator']),
-                  likesCount(snapshot.data.docs[index]['likes']),
-                  upvoteButton(),
+                  _ThumbnailImage(
+                    data: snapshot[index]['thumbnail'],
+                  ),
+                  _Title(
+                    data: snapshot[index]['title'],
+                  ),
+                  _Creator(
+                    data: snapshot[index]['creator'],
+                  ),
+                  _LikesCount(
+                    data: snapshot[index]['likes'],
+                  ),
+                  _UpvoteButton(
+                    homeSongData: snapshot[index],
+                    userLikesData: snapshot[index]['user_likes'],
+                  )
                 ],
               ),
             )),
+          );
+        });
+  }
+}
+class MyHomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('songs').snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          return Scaffold(
+            appBar: AppBar(title: Text('PjSekai Wishlist Songs'),),
+            body: _ListOfSongs(
+            snapshot: snapshot.data?.docs,
+          ),
           );
         });
   }

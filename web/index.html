@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -26,21 +27,23 @@
   <title>pjsekai_upvote</title>
   <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
   <!-- Add this line -->
   <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
-   <!-- Firebase Configuration -->
-   <script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+  <!-- Firebase Configuration -->
+  <script>
     var firebaseConfig = {
-    apiKey: "AIzaSyDwFpK5NEHZ8n12wYpz_7IBxTuFJQRHmWw",
-    authDomain: "project-sekai-upvote.firebaseapp.com",
-    projectId: "project-sekai-upvote",
-    storageBucket: "project-sekai-upvote.appspot.com",
-    messagingSenderId: "551805727486",
-    appId: "1:551805727486:web:5af2699843c3d4e9296baf",
-    measurementId: "G-DJT3J9EDJN"
-  };
+      apiKey: "AIzaSyDwFpK5NEHZ8n12wYpz_7IBxTuFJQRHmWw",
+      authDomain: "project-sekai-upvote.firebaseapp.com",
+      projectId: "project-sekai-upvote",
+      storageBucket: "project-sekai-upvote.appspot.com",
+      messagingSenderId: "551805727486",
+      appId: "1:551805727486:web:5af2699843c3d4e9296baf",
+      measurementId: "G-DJT3J9EDJN"
+    };
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
@@ -113,4 +116,5 @@
     }
   </script>
 </body>
+
 </html>
