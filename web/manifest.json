@@ -1,16 +1,16 @@
 {
-    "name": "pjsekai_upvote",
-    "short_name": "pjsekai_upvote",
+    "name": "pjsekai_wishlist",
+    "short_name": "pjsekai_wishlist",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A community wishlist for songs that we wanted available on the game.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "icons/pjsekai_icons.png",
             "sizes": "192x192",
             "type": "image/png"
         },
