@@ -191,8 +191,9 @@ class _ThumbnailImage extends StatelessWidget {
 }
 
 class _ListOfSongs extends StatelessWidget {
+  final onTapSelectSongs;
   final snapshot;
-  _ListOfSongs({@required this.snapshot});
+  _ListOfSongs({@required this.snapshot, @required this.onTapSelectSongs});
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -200,37 +201,44 @@ class _ListOfSongs extends StatelessWidget {
         itemBuilder: (context, index) {
           return Padding(
             padding: EdgeInsets.all(8),
-            child: Card(
-                child: Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ThumbnailImage(
-                    data: snapshot[index]['thumbnail'],
+            child: GestureDetector(
+                onTap: () {
+                  this.onTapSelectSongs(snapshot[index]['title']);
+                },
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ThumbnailImage(
+                          data: snapshot[index]['thumbnail'],
+                        ),
+                        _Title(
+                          data: snapshot[index]['title'],
+                        ),
+                        _Creator(
+                          data: snapshot[index]['creator'],
+                        ),
+                        _LikesCount(
+                          data: snapshot[index]['likes'],
+                        ),
+                        _UpvoteButton(
+                          homeSongData: snapshot[index],
+                          userLikesData: snapshot[index]['user_likes'],
+                        )
+                      ],
+                    ),
                   ),
-                  _Title(
-                    data: snapshot[index]['title'],
-                  ),
-                  _Creator(
-                    data: snapshot[index]['creator'],
-                  ),
-                  _LikesCount(
-                    data: snapshot[index]['likes'],
-                  ),
-                  _UpvoteButton(
-                    homeSongData: snapshot[index],
-                    userLikesData: snapshot[index]['user_likes'],
-                  )
-                ],
-              ),
-            )),
+                )),
           );
         });
   }
 }
 
 class MyHomePage extends StatelessWidget {
+  final onTapSelectSongs;
+  MyHomePage({@required this.onTapSelectSongs});
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -254,6 +262,7 @@ class MyHomePage extends StatelessWidget {
               ],
             ),
             body: _ListOfSongs(
+              onTapSelectSongs: onTapSelectSongs,
               snapshot: snapshot.data?.docs,
             ),
           );

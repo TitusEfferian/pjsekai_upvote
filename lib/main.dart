@@ -1,65 +1,164 @@
 import 'package:flutter/material.dart';
-
-// Import the firebase_core plugin
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pjsekai_upvote/route/Home/main.dart';
+import 'package:pjsekai_upvote/route/SongDetail/main.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(App());
+  runApp(AppsRouting());
 }
 
-/// We are using a StatefulWidget such that we only create the [Future] once,
-/// no matter how many times our widget rebuild.
-/// If we used a [StatelessWidget], in the event where [App] is rebuilt, that
-/// would re-initialize FlutterFire and make our application re-enter loading state,
-/// which is undesired.
-class App extends StatefulWidget {
-  // Create the initialization Future outside of `build`:
+class AppsRoutePath {
+  final songId;
+  final isUnknown;
+
+  AppsRoutePath.home()
+      : songId = '',
+        isUnknown = false;
+
+  AppsRoutePath.details(this.songId) : isUnknown = false;
+  AppsRoutePath.unknown()
+      : songId = '',
+        isUnknown = true;
+
+  get isHomePage => songId == '';
+  get isDetailsPage => songId != '';
+}
+
+class AppsRouteInformationParser extends RouteInformationParser<AppsRoutePath> {
   @override
-  _AppState createState() => _AppState();
+  Future<AppsRoutePath> parseRouteInformation(
+      RouteInformation routeInformation) async {
+    final uri = Uri.parse(routeInformation.location.toString());
+    if (uri.pathSegments.length == 0) {
+      return AppsRoutePath.home();
+    }
+    if (uri.pathSegments.length == 1) {
+      return AppsRoutePath.details(uri.pathSegments[0]);
+    }
+    return AppsRoutePath.unknown();
+  }
+
+  @override
+  RouteInformation? restoreRouteInformation(AppsRoutePath configuration) {
+    if (configuration.isUnknown) {
+      return RouteInformation(location: '/404');
+    }
+    if (configuration.isHomePage) {
+      return RouteInformation(location: '/');
+    }
+    if (configuration.isDetailsPage) {
+      return RouteInformation(location: '/${configuration.songId}');
+    }
+    return null;
+  }
 }
 
-class _AppState extends State<App> {
-  /// The future is part of the state of our widget. We should not call `initializeApp`
-  /// directly inside [build].
+class AppsRouteDelegate extends RouterDelegate<AppsRoutePath>
+    with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppsRoutePath> {
   final Future<FirebaseApp> _initialization = Firebase.initializeApp();
+
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  AppsRouteDelegate() : navigatorKey = GlobalKey<NavigatorState>();
+
+  var _songId = '';
+  var show404 = false;
+
+  void onTapSelectSongs(var song) {
+    _songId = song;
+    notifyListeners();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.teal,
-      ),
-      home: FutureBuilder(
-        // Initialize FlutterFire:
-        future: _initialization,
-        builder: (context, snapshot) {
-          // Check for errors
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('initial error'),
-            );
-          }
+    return Navigator(
+      key: navigatorKey,
+      pages: [
+        MaterialPage(
+          key: ValueKey('AppsHome'),
+          child: FutureBuilder(
+            // Initialize FlutterFire:
+            future: _initialization,
+            builder: (context, snapshot) {
+              // Check for errors
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('initial error'),
+                );
+              }
 
-          // Once complete, show your application
-          if (snapshot.connectionState == ConnectionState.done) {
-            return MyHomePage();
-          }
+              // Once complete, show your application
+              if (snapshot.connectionState == ConnectionState.done) {
+                return MyHomePage(
+                  onTapSelectSongs: onTapSelectSongs,
+                );
+              }
 
-          // Otherwise, show something whilst waiting for initialization to complete
-          return CircularProgressIndicator();
-        },
-      ),
+              // Otherwise, show something whilst waiting for initialization to complete
+              return CircularProgressIndicator();
+            },
+          ),
+        ),
+        if (_songId != '') SongDetailpage(songId: _songId),
+      ],
+      onPopPage: (route, result) {
+        if (!route.didPop(result)) {
+          return false;
+        }
+        _songId = '';
+        show404 = false;
+        notifyListeners();
+        return true;
+      },
     );
+  }
+
+  get currentConfiguration {
+    if (show404) {
+      return AppsRoutePath.unknown();
+    }
+    return _songId == ''
+        ? AppsRoutePath.home()
+        : AppsRoutePath.details(_songId);
+  }
+
+  @override
+  Future<void> setNewRoutePath(AppsRoutePath configuration) async {
+    if (configuration.isUnknown) {
+      _songId = '';
+      show404 = true;
+      return;
+    }
+    if (configuration.isDetailsPage) {
+      if (configuration.songId != '') {
+        _songId = configuration.songId;
+      } else {
+        _songId = '';
+      }
+    }
+    show404 = false;
+  }
+}
+
+class AppsRouting extends StatefulWidget {
+  @override
+  _AppsRoutingState createState() {
+    return _AppsRoutingState();
+  }
+}
+
+class _AppsRoutingState extends State<AppsRouting> {
+  var _routeInformationParser = AppsRouteInformationParser();
+  var _routerDelegate = AppsRouteDelegate();
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+        title: 'PjSekai wishlist songs',
+        theme: ThemeData(
+          primarySwatch: Colors.teal,
+        ),
+        routeInformationParser: _routeInformationParser,
+        routerDelegate: _routerDelegate);
   }
 }
