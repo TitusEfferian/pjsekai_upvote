@@ -197,6 +197,7 @@ class _ListOfSongs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+        key: PageStorageKey('listviewOfSongs'),
         itemCount: snapshot.length,
         itemBuilder: (context, index) {
           return Padding(
