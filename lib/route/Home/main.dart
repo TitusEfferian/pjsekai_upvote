@@ -204,7 +204,7 @@ class _ListOfSongs extends StatelessWidget {
             padding: EdgeInsets.all(8),
             child: GestureDetector(
                 onTap: () {
-                  this.onTapSelectSongs(snapshot[index]['title']);
+                  this.onTapSelectSongs(snapshot[index].id);
                 },
                 child: Card(
                   child: Padding(
